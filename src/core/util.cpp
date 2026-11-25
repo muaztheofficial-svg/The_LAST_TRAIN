@@ -2,7 +2,7 @@
 #include<iostream>
 #include<cstdlib>
 using namespace std;
-int clampINt(int val, int minVal, int maxVal)
+int clampInt(int val, int minVal, int maxVal)
 {
 if (val<minVal)
 return minVal;
