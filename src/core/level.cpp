@@ -25,7 +25,7 @@ const char* getEntityName(char entitySymbol) {
         case ENT_CABINET_TRAIN_KEY: return "Cabinet / Train Key";
         case ENT_CAT_CARRIER: return "Cat Carrier";
         case ENT_OBSERVATION_TOKEN: return "Observation Token";
-        default: return "cringe";
+        default: return "cringe -- unkown item";
     }
 
 }
@@ -86,6 +86,49 @@ bool loadBuildingMap(const char* filename,
                             }
                         }
                     }
+                    file.close();
                     return true;
 }
+bool loadInitialState(const char* filename,
+                      int& playerFloor, int& playerRoom,
+                      int& energy, int& time, int& score,
+                      char inventory[MAX_INVENTORY_CAPACITY], int& inventoryCount,
+                      bool objectives[NUM_OBJECTIVES], int& emergencyTripsLeft) {
+                        ifstream file(filename);
+                        if(!file.is_open()) {
+                            cout << "Error opening file " << filename << endl;
+                            return false;
+                        }
+
+                        playerFloor = 1;
+                        playerRoom = 1;
+                        energy=INITIAL_ENERGY;
+                        time=INITIAL_TIME;
+                        score=INITIAL_SCORE;
+                        inventoryCount=0;
+                        emergencyTripsLeft=0;
+
+                        for(int i=0;i<MAX_INVENTORY_CAPACITY;i++)
+                            inventory[i]= ENT_NONE;
+                        for(int i=0;i<NUM_OBJECTIVES;i++)
+                            objectives[i]= false;
+                        
+                        string word;
+                        while(file>>word) {
+                            if(word == "INITIAL_ENERGY:") file>>energy;
+                            else if(word == "INITIAL_TIME:") file>>time;
+                            else if(word == "INITIAL_SCORE:") file>>score;
+                        }
+                        file.close();
+                        return true;
+                      }
+bool validateStartingRoom(int startFloor, int startRoom,
+                          const char horizontalConn[NUM_FLOORS][ROOMS_PER_FLOOR - 1]) {
+                            if(horizontalConn == nullptr) return false;
+                            if(startFloor<1 || startFloor>NUM_FLOORS) return false;
+                            if(startRoom<1 || startRoom>ROOMS_PER_FLOOR) return false;
+                            return true;
+                          }
+
+
 
