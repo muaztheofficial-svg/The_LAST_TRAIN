@@ -21,4 +21,29 @@ bool unlockFloor3Door(const char inventory[MAX_INVENTORY_CAPACITY],int inventory
 {
 return hasItem(inventory,inventoryCount,ENT_MASTER_KEY);}
 
+//Muaz's code as you can tell by the sane formatting
+bool verifyCabinetCode(const char* enteredCode, const bool objectives[NUM_OBJECTIVES]) {
+    //first we check agr pehle se cabinet code ka obj pura hogya hai
+    if(objectives[OBJ_CABINET_UNLOCKED]) return true;
+    if(stringEquals(enteredCode,"427"))
+        return true;
+    return false;
+}
+bool installFuseControlPanel(char inventory[MAX_INVENTORY_CAPACITY], int& inventoryCount,
+                             bool objectives[NUM_OBJECTIVES], int& score) {
+                                if(!hasItem(inventory,inventoryCount,ENT_FUSE)) return false;
+                                if(removeItem(inventory,inventoryCount,ENT_FUSE)) {
+                                    if(!objectives[OBJ_FUSE_INSTALLED]) {
+                                        objectives[OBJ_FUSE_INSTALLED]= true;
+                                        objectives[OBJ_LIFT2_ACTIVE]= true;
+                                        score += 20;
+                                    }
+                                    return true;
+                                }
+                                return false;
+                                    
+                             }
+
+
+
 // Door lock mechanics, lifts, and cabinet verification without structures

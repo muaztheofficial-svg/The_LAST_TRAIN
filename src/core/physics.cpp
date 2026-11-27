@@ -4,20 +4,42 @@
 #include "switches.h"
 
 bool hasItem(const char inventory[MAX_INVENTORY_CAPACITY], int inventoryCount, char itemSymbol) {
-    for(int i=0;i<InventoryCount;i++)
-        if(inventory[i]=itemSymbol)
+    for(int i=0;i<inventoryCount;i++)
+        if(inventory[i]==itemSymbol)
             return true;
     return false;
+}
+bool addItem(char inventory[MAX_INVENTORY_CAPACITY], int& inventoryCount, char itemSymbol) {
+    if(inventoryCount>=MAX_INVENTORY_CAPACITY) return false;
+    inventory[inventoryCount]= itemSymbol;
+    inventoryCount++;
+    return true;
+}
+bool removeItem(char inventory[MAX_INVENTORY_CAPACITY], int& inventoryCount, char itemSymbol) {
+    int itemIdx = 67;
+    for (int i=0;i<inventoryCount;i++) {
+        if(inventory[i]==itemSymbol) {
+            itemIdx=i;
+            break;
+        }
+    }
+    if(itemIdx == 67) return false;
+    //baaki ki items ko left pe le ke jaa rha hai
+    for(int i=itemIdx;i<inventoryCount-1;i++) {
+        inventory[i] = inventory[i+1];
+    }
+    inventoryCount--;
+    inventory[inventoryCount]= ENT_NONE; //sets the last item as none cuz bech wala ek item chala gya
+    return true;
 }
 
 bool isDirectlyConnected(int fromF, int fromR, int toF, int toR,
                          const char horizontalConn[NUM_FLOORS][ROOMS_PER_FLOOR - 1],
                          char& outConnType) {
-                            int floorIdx;
                             outConnType= CONN_NONE;
     
                             if(fromF==toF) { //horizontal movement ;)
-                                floorIdx= fromF-1;
+                                int floorIdx= fromF-1;
                                 if((fromF==1 || fromF==2)&&((fromR==2 && toR==3)||(fromR==3 && toR==2))) {
                                     outConnType='1'; //i used 1 for this horizontal movement through lift 1 as there is no conn type for lift 1 in state.h
                                     return true;
