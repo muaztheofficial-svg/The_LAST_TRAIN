@@ -4,6 +4,8 @@
 #include "logger.h"
 #include "viewer_iface.h"
 #include "util.h"
+#include "level.h"
+#include <iostream>
 #include <string>
 using namespace std;
 
@@ -79,4 +81,116 @@ bool handleMoveCommand(int targetFloor, int targetRoom,
 
 
                     }
+bool handleInspectCommand(int currentFloor, int currentRoom,
+                          int& energy, int& time,
+                          const char roomEntities[NUM_FLOORS][ROOMS_PER_FLOOR][MAX_ENTITIES_PER_ROOM],
+                          int entityCount,
+                          bool objectives[NUM_OBJECTIVES], int& score) {
+                            energy-=COST_INSPECT_ENERGY;
+                            time-=COST_INSPECT_TIME;
+
+                            //i created f and r index for floor n room
+                            int f=currentFloor-1;
+                            int r=currentRoom-1;
+
+                            if(entityCount<=0) {
+                                g_lastActionMessage = "[Inspect] F" + to_string(currentFloor) + "-R"
+                                + to_string(currentRoom) + " was completely empty. (-1 Energy, -1 Time)";
+                                return true;
+                            }
+                            string report = "[Inspect] Findings for F" + to_string(currentFloor) + "-R"
+                                + to_string(currentRoom) + " (-1 Energy, -1 Time):\n";
+                            for(int i=0; i < entityCount; i++) {
+                                char symbol = roomEntities[f][r][i];
+                                report += "  - " + string(getEntityName(symbol)) + " (')" + symbol + "')";
+
+                                if(symbol==ENT_CLUE_4) {
+                                    if(!objectives[OBJ_CLUE_4]) {
+                                        objectives[OBJ_CLUE_4]=true;
+                                        score+=SCORE_CLUE_FOUND;
+                                        report += " -> [NEW CLUE: First digit is '4'] (+10 Score)";
+                                    }
+                                    else report+= " -> [Clue: First digit is '4']";
+                                }
+                                else if(symbol==ENT_CLUE_2) {
+                                    if(!objectives[OBJ_CLUE_2]) {
+                                        objectives[OBJ_CLUE_2]=true;
+                                        score+=SCORE_CLUE_FOUND;
+                                        report += " -> [NEW CLUE: Second digit is '2'] (+10 Score)";
+                                    }
+                                    else report+= " -> [Clue: Second digit is '2']";
+                                }
+                                else if(symbol==ENT_CLUE_7) {
+                                    if(!objectives[OBJ_CLUE_7]) {
+                                        objectives[OBJ_CLUE_7]=true;
+                                        score+=SCORE_CLUE_FOUND;
+                                        report += " -> [NEW CLUE: Third digit is '7'] (+10 Score)";
+                                    }
+                                    else report+= " -> [Clue: Third digit is '7']";
+                                }
+                                //im also going to make a report for the items that are not codes but require some item
+                                else if(symbol == ENT_CONTROL_PANEL)
+                                    report+= " -> [Power Terminal: Requires Fuse ('*')]";
+                                else if(symbol == ENT_PASSENGER)
+                                    report+=" -> [Injured Passenger : Requires Medical Kit ('%')]";
+                                else if(symbol == ENT_CAT)
+                                    report+= " -> [Stranded Cat: Requires Cat Carrier ('@')]";
+                                else if(symbol == ENT_CABINET_TRAIN_KEY)
+                                    report+= " -> [Security Cabinet: Locked (requires 3-digit code)]";
+                            
+                            if(i<entityCount-1) report += "\n";
+                            }
+                            g_lastActionMessage=report;
+                            return true;
+                          }
+bool handleCollectCommand(char itemSymbol, int currentFloor, int currentRoom,
+                          int& energy, int& time, int& score,
+                          char roomEntities[NUM_FLOORS][ROOMS_PER_FLOOR][MAX_ENTITIES_PER_ROOM],
+                          int& entityCount,
+                          char inventory[MAX_INVENTORY_CAPACITY], int& inventoryCount,
+                          bool objectives[NUM_OBJECTIVES]) {
+                            int f = currentFloor- 1;
+                            int r = currentRoom-1;
+
+                            int itemIdx = 67;
+                            for(int i=0; i<entityCount;i++) {
+                                if(roomEntities[f][r][i] == itemSymbol) {
+                                    itemIdx=i;
+                                    break;
+                                }
+                            }
+                            //check whether the item is in the room
+                            if(itemIdx == 67) {
+                                string item=""; item += itemSymbol;
+                                g_lastActionMessage = "[Collect Blocked] Item '" + item + "' is not present in F"
+                                + to_string(currentFloor) + "-R" + to_string(currentRoom) + ".";
+                                return false;
+                            }
+                            //make sure the player doesnt pick up an item they cant pick up
+                            if (itemSymbol == ENT_CONTROL_PANEL) {
+                                g_lastActionMessage= "[Collect Blocked] Cannot pick up the Control Panel!";
+                                return false;
+                            }
+                            if(itemSymbol==ENT_PASSENGER) {
+                                g_lastActionMessage= "[Collect Blocked] The passenger is injured! Use a Medical Kit ('%').";
+                                return false;
+                            }
+                            if(itemSymbol==ENT_CAT) {
+                                g_lastActionMessage="[Collect Blocked] The cat ran away! Use the Cat Carrier ('@').";
+                                return false;
+                            }
+                            if(itemSymbol==ENT_CABINET_TRAIN_KEY && !objectives[OBJ_CABINET_UNLOCKED]) {
+                                g_lastActionMessage=  "[Collect Blocked] The Train Key is locked inside the security cabinet! Use UNLOCK first.";
+                                return false;
+                            }
+                            if(!addItem(inventory, inventoryCount, itemSymbol)) {
+                                g_lastActionMessage = "[Collect Blocked] Inventory is full!";
+                                return false;
+                            }
+
+                            //now that all the checks are done we move onto the succesfull pick up code
+                            energy-= COST_ITEM_PICKUP_ENERGY;
+                            time -= COST_ITEM_PICKUP_TIME;
+                          }
+
 
