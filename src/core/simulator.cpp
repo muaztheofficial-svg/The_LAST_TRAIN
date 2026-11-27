@@ -102,7 +102,7 @@ bool handleInspectCommand(int currentFloor, int currentRoom,
                                 + to_string(currentRoom) + " (-1 Energy, -1 Time):\n";
                             for(int i=0; i < entityCount; i++) {
                                 char symbol = roomEntities[f][r][i];
-                                report += "  - " + string(getEntityName(symbol)) + " (')" + symbol + "')";
+                                report += "  - " + string(getEntityName(symbol)) + " ('" + symbol + "')";
 
                                 if(symbol==ENT_CLUE_4) {
                                     if(!objectives[OBJ_CLUE_4]) {
@@ -159,9 +159,9 @@ bool handleCollectCommand(char itemSymbol, int currentFloor, int currentRoom,
                                     break;
                                 }
                             }
+                            string item=""; item += itemSymbol;
                             //check whether the item is in the room
                             if(itemIdx == 67) {
-                                string item=""; item += itemSymbol;
                                 g_lastActionMessage = "[Collect Blocked] Item '" + item + "' is not present in F"
                                 + to_string(currentFloor) + "-R" + to_string(currentRoom) + ".";
                                 return false;
@@ -191,6 +191,164 @@ bool handleCollectCommand(char itemSymbol, int currentFloor, int currentRoom,
                             //now that all the checks are done we move onto the succesfull pick up code
                             energy-= COST_ITEM_PICKUP_ENERGY;
                             time -= COST_ITEM_PICKUP_TIME;
-                          }
+
+                            //the reason im not using removeItem function is cuz that removes items from inventory rather than room.
+                            for(int i=itemIdx;i<entityCount-1;i++) {
+                                roomEntities[f][r][i] = roomEntities[f][r][i+1];
+                            }
+                            entityCount--;
+                            roomEntities[f][r][entityCount] = ENT_NONE;
+
+                            if(itemSymbol==ENT_MASTER_KEY && !objectives[OBJ_MASTER_KEY]) {
+                                objectives[OBJ_MASTER_KEY] = true;
+                                score +=15;
+                            }
+                            else if(itemSymbol == ENT_FUSE)
+                                objectives[OBJ_FUSE_COLLECTED] = true;
+                            else if(itemSymbol==ENT_LIFT_PASS && !objectives[OBJ_LIFT_PASS]) {
+                                objectives[OBJ_LIFT_PASS] = true;
+                                score += 25;
+                            }
+                            else if(itemSymbol == ENT_CAT_CARRIER)
+                                objectives[OBJ_CAT_CARRIER]= true;
+                            else if(itemSymbol == ENT_CABINET_TRAIN_KEY && !objectives[OBJ_TRAIN_KEY]) {
+                                objectives[OBJ_TRAIN_KEY] = true;
+                                score += 30;
+                            }
+                            else if(itemSymbol ==ENT_CLUE_4 || itemSymbol == ENT_CLUE_2 || itemSymbol==ENT_CLUE_7)
+                                score+=10;
+                            
+                            g_lastActionMessage = "[Collect Success] Picked up " + string(getEntityName(itemSymbol)) +
+                            " ('" + item + "') (-1 Energy, -1 Time)";
+                            return true; 
+                        }
+bool handleUnlockCabinetCommand(const char* code, int currentFloor, int currentRoom,
+                                bool objectives[NUM_OBJECTIVES], int& score,
+                                char roomEntities[NUM_FLOORS][ROOMS_PER_FLOOR][MAX_ENTITIES_PER_ROOM],
+                                int& entityCount) {
+                                    (void)roomEntities; (void)entityCount;
+                            if(entityCount <= 0 || roomEntities == nullptr) return false;
+                            //the room needs to be 5 1
+                            if(!(currentFloor==5 && currentRoom==1)) {
+                                g_lastActionMessage= "[Unlock Blocked] There is no security cabinet in F" +
+                                to_string(currentFloor) + "-R" + to_string(currentRoom) + ".";
+                                return false;
+                            }
+                            //checking agr cabinet pehle se unlock he
+                            if(objectives[OBJ_CABINET_UNLOCKED]) {
+                                g_lastActionMessage = "[Unlock Notice] The cabinet in F5-R1 has already been unlocked.";
+                                return false;
+                            }
+                            if(!verifyCabinetCode(code, objectives)) {
+                                g_lastActionMessage= "[Unlock Failed] Incorrect access code entered. Access denied.";
+                                return false;
+                            }
+
+                            objectives[OBJ_CABINET_UNLOCKED]=true;
+                            score+=SCORE_CABINET_UNLOCK;
+                            g_lastActionMessage= "[Unlock Success] Access code '427' verified! Security cabinet opened (+" +
+                            to_string(SCORE_CABINET_UNLOCK) + " Score). Train Key ('^') is now unlocked!";
+                            return true;
+                        }
+bool handleUseCommand(char itemSymbol, int currentFloor, int currentRoom,
+                      int& energy, int& time, int& score,
+                      char inventory[MAX_INVENTORY_CAPACITY], int& inventoryCount,
+                      bool objectives[NUM_OBJECTIVES]) {
+                    string item = ""; item += itemSymbol;
+                    if(!hasItem(inventory,inventoryCount,itemSymbol)) {
+                        g_lastActionMessage="[Use Blocked] You do not have '"+ item + "' in your inventory.";
+                        return false;
+                    }
+                    //there are 7 usable items so the following code is going to contain the logic for 7 usable items
+                    if(itemSymbol == ENT_FUSE) {
+                        if(currentFloor==3 && currentRoom==4) {
+                        if(installFuseControlPanel(inventory,inventoryCount,objectives,score)) {
+                            energy -= 1; time -= 1;
+                            g_lastActionMessage = "[Puzzle Solved] Fuse installed into Control Panel! Lift 2 powered and ACTIVE (+20 Score)! (-1 Energy, -1 Time)";
+                            return true;
+                        }
+                    } 
+                    else {
+                            g_lastActionMessage = "[Use Blocked] The Fuse can only be installed into the Control Panel at F3-R4.";
+                            return false;
+                        }
+                    }
+                    if(itemSymbol==ENT_MEDICAL_KIT) {
+                        if(currentFloor == 4 && currentRoom==1) {
+                            if(objectives[OBJ_PASSENGER_RESCUED]) {
+                                g_lastActionMessage = "[Use Notice] Passenger is already treated.";
+                                return false;
+                            }
+                            removeItem(inventory,inventoryCount,ENT_MEDICAL_KIT);
+                            energy-=COST_ITEM_USE_ENERGY; time-=COST_ITEM_USE_TIME;
+                            objectives[OBJ_PASSENGER_RESCUED] = true;
+                            score += SCORE_RESCUE_PASSENGER;
+                            g_lastActionMessage= "[Rescue Success] Applied Medical Kit! Stranded passenger rescued (+25 Score)! (-1 Energy, -1 Time)";
+                            return true;
+                        }
+                        else {
+                            g_lastActionMessage = "[Use Blocked] There is no injured passenger here to treat.";
+                            return false;
+                        }
+                    }
+                    if(itemSymbol==ENT_CAT_CARRIER) {
+                        if(currentFloor==3 && currentRoom==3) {
+                            if(objectives[OBJ_CAT_SECURED]) {
+                                g_lastActionMessage="[Use Notice] The cat is already secured.";
+                                return false;
+                            }
+                            energy-=COST_ITEM_USE_ENERGY; time-=COST_ITEM_USE_TIME;
+                            objectives[OBJ_CAT_SECURED]=true;
+                            score+=SCORE_SECURE_CAT;
+                            g_lastActionMessage="[Rescue Success] Cat caught using the Cat Carrier! Cat successfully secured (+25 Score)! (-1 Energy, -1 Time)";
+                            return true;
+                        }
+                        else {
+                            g_lastActionMessage="[Use Blocked] There is no cat in this room to secure.";
+                            return false;
+                        }
+                    }
+                    if(itemSymbol==ENT_ENERGY_PACK) {
+                        removeItem(inventory,inventoryCount,ENT_ENERGY_PACK);
+                        energy+=BONUS_ENERGY_PACK;
+                        g_lastActionMessage = "[Use Success] Consumed Energy Pack. (+25 Energy restored!)";
+                        return true;
+                    }
+                    if(itemSymbol==ENT_EMERGENCY_TOOLKIT) {
+                        removeItem(inventory,inventoryCount,ENT_EMERGENCY_TOOLKIT);
+                        energy+=BONUS_EMERGENCY_TOOLKIT; time+=BONUS_EMERGENCY_TOOLKIT;
+                        g_lastActionMessage="[Use Success] Used Emergency Toolkit. (+15 Energy, +15 Time restored!)";
+                        return true;
+                    }
+                    if(itemSymbol==ENT_OBSERVATION_TOKEN) {
+                        removeItem(inventory,inventoryCount,ENT_OBSERVATION_TOKEN);
+                        time+=BONUS_OBSERVATION_TOKEN;
+                        g_lastActionMessage = "[Use Success] Used Observation Token. (+15 Time restored!)";
+                        return true;
+                    }
+                    if(itemSymbol==ENT_CABINET_TRAIN_KEY) {
+                        if(currentFloor==1 && currentRoom==1) {
+                            if(!objectives[OBJ_TRAIN_PREPARED]) {
+                                objectives[OBJ_TRAIN_PREPARED]=true;
+                                score+=SCORE_PREPARE_TRAIN;
+                                g_lastActionMessage = "[Train Prepared] Inserted Train Key into the console! The Last Train engine roars to life (+100 Score)! Type DEPART to escape!";
+                                return true;
+                            }
+                            else {
+                                g_lastActionMessage="[Train Notice] The train engine is already running! Type DEPART to evacuate.";
+                                return true;
+                            }
+                        }
+                            else {
+                                g_lastActionMessage="[Use Blocked] The Train Key must be used at the Train Departure Station in F1-R1.";
+                                return false;
+                            }
+                            }
+                            //default case
+                            g_lastActionMessage="[Use Blocked] Cannot use " + string(getEntityName(itemSymbol)) + " ('" + item + "') here.";
+                            return false;
+                        
+                    }
+
 
 
