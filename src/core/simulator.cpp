@@ -192,5 +192,112 @@ bool handleCollectCommand(char itemSymbol, int currentFloor, int currentRoom,
                             energy-= COST_ITEM_PICKUP_ENERGY;
                             time -= COST_ITEM_PICKUP_TIME;
                           }
-
-
+//abdullah
+void runSimulation(int &playerfloor,int &playerRoom,int &energy,int &time,int &score,char inventory[MAX_INVENTORY_CAPACITY],int &inventoryCount,bool objectives[NUM_OBJECTIVES],int &emergencyTripsLeft,char horizontalConn[NUM_FLOORS][ROOMS_PER_FLOOR-1],char roomEntities[NUM_FLOORS][ROOMS_PER_FLOOR][MAX_ENTITIES_PER_ROOM],int entityCounts[NUM_FLOORS][ROOMS_PER_FLOOR])
+{
+bool running=true;
+string command;
+while (running)
+{
+if (objectives[OBJ_LIFT_PASS] && emergencyTripsLeft<3 && !objectives[OBJ_LIFT2_ACTIVE])
+{
+emergencyTripsLeft=3;}
+if (energy<=0 || time<=0)
+{
+objectives[OBJ_MISSION_FAILED]=true;
+break;}
+clearScreen();
+renderDashboard(playerFloor, playerRoom, energy, time, score, inventory, inventoryCount, emergencyTripsleft);
+renderRoomDetails(playerFloor, playerRoom, roomEntities, entityCounts[playerFloor-1][playerRoom-1]);
+renderAsciiBuilding(playerFloor, playerRoom);
+if (!g_lastActionMessage.empty())
+{
+cout<<endl<<">>>"<<g_lastActionMessage<<endl;}
+cout<<endl<<"Enter command (MOVE, INSPECT, COLLECT, USE, UNLOCK, DEPART, CHECKLIST, HELP, QUIT): ";
+if (!(cin>>command))
+{
+break;}
+if (command=="MOVE" || command=="move")
+{
+int targetFloor, targetRoom;
+if (cin>>targetFloor>>targetRoom)
+{
+bool lift2Operational=objectives[OBJ_LIFT2_ACTIVE];
+handleMoveCommand(targetFloor, targetRoom, playerFloor, playerRoom, energy, time, horizontalConn, inventory, inventoryCount, emergencyTripsLeft, lift2Operational);}
+else 
+{
+g_lastActionMessage="[Error] Invalid coordinates! Usage: MOVE <floor> <room>";
+cin.clear();
+string discard;
+getline(cin, discard);}
+else if (command=="INSPECT" || command=="inspect")
+{
+handleInspectCommand(playerFloor, playerRoom, energy, time, roomEntities, entityCounts[playerFloor-1][playerRoom-1], objectives, score);}
+else if (command=="COLLECT" || command=="collect")
+{
+char symbol;
+if (cin>>symbol)
+{
+handleCollectCommand(symbol, playerFloor, playerRoom, energy, time, score, roomEntities, entityCounts[playerFloor-1][playerRoom-1], inventory, inventoryCount, objectives);}
+else
+{
+g_lastActionMessage="[Error] Usage: COLLECT <item_symbol>";
+cin.clear();
+string discard;
+getline(cin, discard);}}
+else if (command=="USE" || command=="use")
+{
+char symbol;
+if (cin>>symbol)
+{
+handleUseCommand(symbol, playerFloor playerRoom, energy, time, score, inventory, inventoryCount, objectives);}
+else
+{
+g_lastActionMessage="[Error] Usage: USE <item_symbol>";
+cin.clear();
+string discard;
+getline(cin, discard);}}
+else if (command=="UNLOCK" || command=="unlock")
+{
+string code;
+if (cin>>code)
+{
+handleUnlockCabinetCommand(code.c.str(), playerFloor, playerRoom, objectives, score, roomEntities, entityCounts[playerFloor-1][playerRoom-1]);}
+else
+{
+g_lastActionMessage="[Error] Usage: UNLOCK <code>";
+cin.clear();
+string discard;
+getline(cin, discard);}}
+else if (command=="CHECKLIST" || command=="checklist")
+{
+renderObejctivesChecklist(objectives);
+cout<<endl<<"Press Enter to return to dashboard...";
+cin.ignore();
+string dummy;
+getline(cin, dummy);}
+else if (command=="HELP" || command=="help")
+[
+cout<<endl<<"================== COMMAND LIST =================="<<endl;
+cout<<endl<<"  MOVE <floor> <room>   - Move to adjacent room, stairs, or lift"<<endl;
+cout<<"  INSPECT               - Examine current room forclues and items"<<endl;
+cout<<"  COLLECT <symbol>      - Pick up an item from the floor into inventory"<<endl;
+cout<<"  USE <symbol>          - Use an item from your inventory"<<endl;
+cout<<"  UNLOCK <code>         - Enter 3-digit combination code (F5-R1)"<<endl;
+cout<<"  DEPART / BOARD        - Board the prepared train in F1-R1"<<endl;
+cout<<"  CHECKLIST             - View all 16 mission objectives"<<endl;
+cout<<"  HELP                  - Display this help message"<<endl;
+cout<<"  QUIT                  - Exit simulation"<<endl;
+cout<<"=================================================="<<endl;
+cout<<"Press Enter to return to dashboard...";
+cin.ignore;
+string dummy;
+getline(cin, dummy);}
+else if (command=="QUIT" || command=="quit")
+{
+cout<<endl<<"Exiting simulation. Goodbye!"<<endl;
+running=false;
+break;}
+else
+{
+g_lastActionMessage="[Error] Unknown command: '"+command+"'. Type HELP for command list.";}}}
