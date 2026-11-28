@@ -459,3 +459,12 @@ break;}
 else
 {
 g_lastActionMessage="[Error] Unknown command: '"+command+"'. Type HELP for command list.";}}}
+bool checkEndConditions(int energy,int time,const bool objectives[NUM_OBJECTIVES])
+{
+if (energy<=0 || time<=0)
+{
+return true;}
+if (objectives[OBJ_MISSION_WON] || objectives[OBJ_MISSION_FAILED])
+{
+return true;}
+return false;} 
