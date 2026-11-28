@@ -55,13 +55,13 @@ bool handleMoveCommand(int targetFloor, int targetRoom,
                         }
                         //taking out energy and time for movement (will use the future function of applyresourcedelta later)
                         if(connType==CONN_DOOR || connType=='S' || connType==CONN_LOCKED_DOOR) {
-                            energy -=2; time-=1;
+                            applyResourceDelta(energy,time,COST_MOVE_ORDINARY_ENERGY,COST_MOVE_ORDINARY_TIME);
                         }
                         else if(connType==CONN_WINDOW) {
-                            energy-=3; time-=2;
+                            applyResourceDelta(energy,time,COST_MOVE_WINDOW_ENERGY,COST_MOVE_WINDOW_TIME);
                         }
                         else if(connType=='1' || connType=='2') {
-                            energy-=4; time-=3;
+                            applyResourceDelta(energy,time,COST_MOVE_LIFT_ENERGY,COST_MOVE_LIFT_TIME);
                         }
                         //player ko location pe le ke jaa rhe hein
                         currentFloor=targetFloor;
@@ -86,9 +86,7 @@ bool handleInspectCommand(int currentFloor, int currentRoom,
                           const char roomEntities[NUM_FLOORS][ROOMS_PER_FLOOR][MAX_ENTITIES_PER_ROOM],
                           int entityCount,
                           bool objectives[NUM_OBJECTIVES], int& score) {
-                            energy-=COST_INSPECT_ENERGY;
-                            time-=COST_INSPECT_TIME;
-
+                                applyResourceDelta(energy,time,COST_INSPECT_ENERGY,COST_INSPECT_TIME);
                             //i created f and r index for floor n room
                             int f=currentFloor-1;
                             int r=currentRoom-1;
@@ -107,7 +105,7 @@ bool handleInspectCommand(int currentFloor, int currentRoom,
                                 if(symbol==ENT_CLUE_4) {
                                     if(!objectives[OBJ_CLUE_4]) {
                                         objectives[OBJ_CLUE_4]=true;
-                                        score+=SCORE_CLUE_FOUND;
+                                        applyScoreDelta(score,SCORE_CLUE_FOUND);
                                         report += " -> [NEW CLUE: First digit is '4'] (+10 Score)";
                                     }
                                     else report+= " -> [Clue: First digit is '4']";
@@ -115,7 +113,7 @@ bool handleInspectCommand(int currentFloor, int currentRoom,
                                 else if(symbol==ENT_CLUE_2) {
                                     if(!objectives[OBJ_CLUE_2]) {
                                         objectives[OBJ_CLUE_2]=true;
-                                        score+=SCORE_CLUE_FOUND;
+                                        applyScoreDelta(score,SCORE_CLUE_FOUND);
                                         report += " -> [NEW CLUE: Second digit is '2'] (+10 Score)";
                                     }
                                     else report+= " -> [Clue: Second digit is '2']";
@@ -123,7 +121,7 @@ bool handleInspectCommand(int currentFloor, int currentRoom,
                                 else if(symbol==ENT_CLUE_7) {
                                     if(!objectives[OBJ_CLUE_7]) {
                                         objectives[OBJ_CLUE_7]=true;
-                                        score+=SCORE_CLUE_FOUND;
+                                        applyScoreDelta(score,SCORE_CLUE_FOUND);
                                         report += " -> [NEW CLUE: Third digit is '7'] (+10 Score)";
                                     }
                                     else report+= " -> [Clue: Third digit is '7']";
@@ -189,8 +187,7 @@ bool handleCollectCommand(char itemSymbol, int currentFloor, int currentRoom,
                             }
 
                             //now that all the checks are done we move onto the succesfull pick up code
-                            energy-= COST_ITEM_PICKUP_ENERGY;
-                            time -= COST_ITEM_PICKUP_TIME;
+                            applyResourceDelta(energy,time,COST_ITEM_PICKUP_ENERGY,COST_ITEM_PICKUP_TIME);
 
                             //the reason im not using removeItem function is cuz that removes items from inventory rather than room.
                             for(int i=itemIdx;i<entityCount-1;i++) {
@@ -201,19 +198,19 @@ bool handleCollectCommand(char itemSymbol, int currentFloor, int currentRoom,
 
                             if(itemSymbol==ENT_MASTER_KEY && !objectives[OBJ_MASTER_KEY]) {
                                 objectives[OBJ_MASTER_KEY] = true;
-                                score +=15;
+                                applyScoreDelta(score,SCORE_KEY_COLLECT);
                             }
                             else if(itemSymbol == ENT_FUSE)
                                 objectives[OBJ_FUSE_COLLECTED] = true;
                             else if(itemSymbol==ENT_LIFT_PASS && !objectives[OBJ_LIFT_PASS]) {
                                 objectives[OBJ_LIFT_PASS] = true;
-                                score += 25;
+                                applyScoreDelta(score,SCORE_LIFT_PASS);
                             }
                             else if(itemSymbol == ENT_CAT_CARRIER)
                                 objectives[OBJ_CAT_CARRIER]= true;
                             else if(itemSymbol == ENT_CABINET_TRAIN_KEY && !objectives[OBJ_TRAIN_KEY]) {
                                 objectives[OBJ_TRAIN_KEY] = true;
-                                score += 30;
+                                applyScoreDelta(score,SCORE_TRAIN_KEY);
                             }
                             else if(itemSymbol ==ENT_CLUE_4 || itemSymbol == ENT_CLUE_2 || itemSymbol==ENT_CLUE_7)
                                 score+=10;
@@ -263,7 +260,7 @@ bool handleUseCommand(char itemSymbol, int currentFloor, int currentRoom,
                     if(itemSymbol == ENT_FUSE) {
                         if(currentFloor==3 && currentRoom==4) {
                         if(installFuseControlPanel(inventory,inventoryCount,objectives,score)) {
-                            energy -= 1; time -= 1;
+                            applyResourceDelta(energy,time,COST_ITEM_USE_ENERGY,COST_ITEM_USE_ENERGY);
                             g_lastActionMessage = "[Puzzle Solved] Fuse installed into Control Panel! Lift 2 powered and ACTIVE (+20 Score)! (-1 Energy, -1 Time)";
                             return true;
                         }
@@ -282,7 +279,7 @@ bool handleUseCommand(char itemSymbol, int currentFloor, int currentRoom,
                             removeItem(inventory,inventoryCount,ENT_MEDICAL_KIT);
                             energy-=COST_ITEM_USE_ENERGY; time-=COST_ITEM_USE_TIME;
                             objectives[OBJ_PASSENGER_RESCUED] = true;
-                            score += SCORE_RESCUE_PASSENGER;
+                            applyScoreDelta(score,SCORE_RESCUE_PASSENGER);
                             g_lastActionMessage= "[Rescue Success] Applied Medical Kit! Stranded passenger rescued (+25 Score)! (-1 Energy, -1 Time)";
                             return true;
                         }
@@ -299,7 +296,7 @@ bool handleUseCommand(char itemSymbol, int currentFloor, int currentRoom,
                             }
                             energy-=COST_ITEM_USE_ENERGY; time-=COST_ITEM_USE_TIME;
                             objectives[OBJ_CAT_SECURED]=true;
-                            score+=SCORE_SECURE_CAT;
+                            applyScoreDelta(score,SCORE_SECURE_CAT);
                             g_lastActionMessage="[Rescue Success] Cat caught using the Cat Carrier! Cat successfully secured (+25 Score)! (-1 Energy, -1 Time)";
                             return true;
                         }
@@ -310,19 +307,19 @@ bool handleUseCommand(char itemSymbol, int currentFloor, int currentRoom,
                     }
                     if(itemSymbol==ENT_ENERGY_PACK) {
                         removeItem(inventory,inventoryCount,ENT_ENERGY_PACK);
-                        energy+=BONUS_ENERGY_PACK;
+                        applyResourceDelta(energy,time,BONUS_ENERGY_PACK,0);
                         g_lastActionMessage = "[Use Success] Consumed Energy Pack. (+25 Energy restored!)";
                         return true;
                     }
                     if(itemSymbol==ENT_EMERGENCY_TOOLKIT) {
                         removeItem(inventory,inventoryCount,ENT_EMERGENCY_TOOLKIT);
-                        energy+=BONUS_EMERGENCY_TOOLKIT; time+=BONUS_EMERGENCY_TOOLKIT;
+                        applyResourceDelta(energy,time,BONUS_EMERGENCY_TOOLKIT,BONUS_EMERGENCY_TOOLKIT);
                         g_lastActionMessage="[Use Success] Used Emergency Toolkit. (+15 Energy, +15 Time restored!)";
                         return true;
                     }
                     if(itemSymbol==ENT_OBSERVATION_TOKEN) {
                         removeItem(inventory,inventoryCount,ENT_OBSERVATION_TOKEN);
-                        time+=BONUS_OBSERVATION_TOKEN;
+                        applyResourceDelta(energy,time,0,BONUS_OBSERVATION_TOKEN);
                         g_lastActionMessage = "[Use Success] Used Observation Token. (+15 Time restored!)";
                         return true;
                     }
@@ -330,7 +327,7 @@ bool handleUseCommand(char itemSymbol, int currentFloor, int currentRoom,
                         if(currentFloor==1 && currentRoom==1) {
                             if(!objectives[OBJ_TRAIN_PREPARED]) {
                                 objectives[OBJ_TRAIN_PREPARED]=true;
-                                score+=SCORE_PREPARE_TRAIN;
+                                applyScoreDelta(score,SCORE_PREPARE_TRAIN);
                                 g_lastActionMessage = "[Train Prepared] Inserted Train Key into the console! The Last Train engine roars to life (+100 Score)! Type DEPART to escape!";
                                 return true;
                             }

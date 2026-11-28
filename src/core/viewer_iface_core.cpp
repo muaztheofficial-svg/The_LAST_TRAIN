@@ -5,6 +5,10 @@
 #include<fstream>
 #include<string>
 using namespace std;
+
+//so basically to remove items from building.txt which have been picked up we will introduce a pointer to room entities array to check which items were collected;
+static const char (*s_roomEntities)[ROOMS_PER_FLOOR][MAX_ENTITIES_PER_ROOM]= nullptr;
+
 void renderDashboard(int playerFloor,int playerRoom,int energy,int time,int score,const char inventory[MAX_INVENTORY_CAPACITY],int inventoryCount,int emergencyTripsLeft)
 {
 cout<<"============================================================"<<endl;
@@ -29,6 +33,7 @@ cout<<" ]"<<endl;}
 cout<<"============================================================"<<endl;}
 void renderRoomDetails(int floor,int room,const char roomEntities[NUM_FLOORS][ROOMS_PER_FLOOR][MAX_ENTITIES_PER_ROOM],int entityCount)
 {
+s_roomEntities = roomEntities;
 cout<<"--- Current Room: F"<<floor<<"-R"<<room<<" ---"<<endl;
 if (entityCount<=0)
 {
@@ -47,7 +52,7 @@ cout<<"   - ["<<symbol<<"] "<<getEntityName(symbol)<<endl;}}}
 
 //i used an ANSI escape sequence to turn the player green for better visibility
 void renderAsciiBuilding(int playerFloor, int playerRoom) {
-    cout<< "\n--- Building Layout (\033[1;32m[P]\033[0m = Your Current Location) ---\n";
+    cout<< "\n--- Building Layout (\033[1;33m[P]\033[0m = Your Current Location) ---\n";
     ifstream file("data/building.txt");
     if(!file.is_open()) {
         cout << "Error opening file for Rendering the map\n";
@@ -62,12 +67,46 @@ void renderAsciiBuilding(int playerFloor, int playerRoom) {
 
     //making a string variable to look for the players location
     string targetLabel= "F" + to_string(playerFloor) + "-R" + to_string(playerRoom);
-    string playerMarker = "\033[1;32m[P]  \033[0m";
+    string playerMarker = "\033[1;33m[P]  \033[0m";
     int lineIndex=14-3*(playerFloor-1); //this formula gives the line where floors and rooms are written for index(0-4)
 
     int position = line[lineIndex].find(targetLabel);
     if(position != -1) line[lineIndex].replace(position,5,playerMarker);
 
+    //now im going to add the logic for removing picked up items from the building
+    if(s_roomEntities!=nullptr) {
+        int colStarts[4]={9,21,33,45};
+        int colEnds[4]={19,31,43,55};
+        for(int f=0;f<NUM_FLOORS;f++) {
+            int itemLine = 15-3*f;
+            for(int r=0;r<ROOMS_PER_FLOOR; r++) {
+                char roomItems[MAX_ENTITIES_PER_ROOM];
+                int count=0;
+                for(int k=0;k<MAX_ENTITIES_PER_ROOM;k++) {
+                    char item=s_roomEntities[f][r][k];
+                    if(item != ENT_NONE && item!='\0')
+                        roomItems[count++] = item;
+                }
+                //checking the entities in this room . meaning column range
+                for(int col=colStarts[r]; col<=colEnds[r];col++) {
+                    char ch =line[itemLine][col];
+                    if(ch != ENT_NONE) {
+                        bool isitemstillthere = false;
+                        for(int k=0;k<count;k++) {
+                            if(roomItems[k] == ch) {
+                                isitemstillthere = true;
+                                roomItems[k] = ENT_NONE; // matched one copy
+                                break;
+                            }
+                        }
+                        //for items no longer there we will erase it with one space;
+                        if(!isitemstillthere) line[itemLine][col] = ENT_NONE;
+                    }
+                }
+            }
+        }
+    }
+    
     for(int i=0;i<17;i++) {
         cout<<line[i]<<endl;
     }

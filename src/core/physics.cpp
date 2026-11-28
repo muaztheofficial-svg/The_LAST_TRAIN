@@ -2,6 +2,7 @@
 #include "util.h"
 #include "state.h"
 #include "switches.h"
+#include "config.h"
 
 bool hasItem(const char inventory[MAX_INVENTORY_CAPACITY], int inventoryCount, char itemSymbol) {
     for(int i=0;i<inventoryCount;i++)
@@ -32,6 +33,16 @@ bool removeItem(char inventory[MAX_INVENTORY_CAPACITY], int& inventoryCount, cha
     inventory[inventoryCount]= ENT_NONE; //sets the last item as none cuz bech wala ek item chala gya
     return true;
 }
+void applyResourceDelta(int& energy, int& time, int deltaEnergy, int deltaTime) {
+    energy = clampInt(energy+deltaEnergy,0,MAX_ENERGY);
+    time = clampInt(time+deltaTime,0,MAX_TIME);
+}
+void applyScoreDelta(int& score, int deltaScore){
+    score += deltaScore;
+    if(score<0) score=0;
+}
+
+
 
 bool isDirectlyConnected(int fromF, int fromR, int toF, int toR,
                          const char horizontalConn[NUM_FLOORS][ROOMS_PER_FLOOR - 1],
