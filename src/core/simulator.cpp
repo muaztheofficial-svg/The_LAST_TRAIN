@@ -427,6 +427,26 @@ g_lastActionMessage="[Error] Usage: UNLOCK <code>";
 cin.clear();
 string discard;
 getline(cin, discard);}}
+//muaz's code
+else if(command == "DEPART" || "depart"){
+    //station is at f 1 r 1
+    if(playerFloor==1 && playerRoom == 1) {
+        if(!objectives[OBJ_TRAIN_PREPARED]) 
+            g_lastActionMessage = "[Departure Blocked] The Train engine is not started! Use the Train Key ('^') to prepare it first.";
+        else if(!objectives[OBJ_PASSENGER_RESCUED]) 
+            g_lastActionMessage = "[Departure Blocked] You cannot leave without the stranded passenger in F4-R1!";
+        else if(!objectives[OBJ_CAT_SECURED]) 
+            g_lastActionMessage = "[Departure Blocked] You cannot leave without securing the stranded cat in F3-R3!";
+        else {
+            //all objectives have been met
+            objectives[OBJ_MISSION_WON] = true;
+            applyScoreDelta(score,SCORE_MISSION_VICTORY);
+            running=false;
+            break;
+        }
+    }
+    else g_lastActionMessage = "[Departure Blocked] You must be at the Train Departure Station in F1-R1 to board!";
+}
 else if (command=="CHECKLIST" || command=="checklist")
 {
 renderObjectivesChecklist(objectives);
@@ -458,4 +478,48 @@ running=false;
 break;}
 else
 {
-g_lastActionMessage="[Error] Unknown command: '"+command+"'. Type HELP for command list.";}}}
+g_lastActionMessage="[Error] Unknown command: '"+command+"'. Type HELP for command list.";}
+//muaz's code
+//check if player died this turn
+if(energy<=0 || time<=0) {
+    objectives[OBJ_MISSION_FAILED] = true;
+    running=false;
+    break;
+}
+}
+
+writeGameSummaryReport("out/game_summary.txt", score, energy, time, objectives, objectives[OBJ_MISSION_WON]);
+
+clearScreen();
+renderDashboard(playerFloor,playerRoom,energy,time,score,inventory,inventoryCount,emergencyTripsLeft);
+renderAsciiBuilding(playerFloor,playerRoom);
+
+if(objectives[OBJ_MISSION_WON]) {
+    cout << "\n============================================================\n";
+        cout << "               *** MISSION ACCOMPLISHED! ***                \n";
+        cout << "============================================================\n";
+        cout << " Congratulations! You successfully rescued the passenger,\n";
+        cout << " secured the stranded cat, prepared the engine, and departed\n";
+        cout << " aboard The Last Train before disaster struck!\n";
+        cout << " FINAL SCORE: " << score << " POINTS\n";
+        cout << " Remaining Energy: " << energy << " | Remaining Time: " << time << "\n";
+        cout << " Session summary report saved to out/game_summary.txt\n";
+        cout << "============================================================\n";
+}
+else if (objectives[OBJ_MISSION_FAILED] || energy <= 0 || time <= 0) {
+        cout << "\n============================================================\n";
+        cout << "                   *** MISSION FAILED ***                   \n";
+        cout << "============================================================\n";
+        
+        if (energy <= 0) cout << " Defeat: You ran out of energy!\n";
+        else cout << " Defeat: You ran out of time!\n";
+
+        cout << " FINAL SCORE: " << score << " POINTS\n";
+        cout << " Session summary report saved to out/game_summary.txt\n";
+        cout << "============================================================\n";
+    } 
+else {
+        cout << "\nSession summary report saved to out/game_summary.txt\n";
+    }
+}
+
