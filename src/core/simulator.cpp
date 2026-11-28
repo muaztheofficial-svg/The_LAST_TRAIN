@@ -428,6 +428,19 @@ cin.clear();
 string discard;
 getline(cin, discard);}}
 //muaz's code
+else if(command == "SAVE" || command == "save") {
+    if(saveGameStateToFile("out/savegame.txt",playerFloor,playerRoom,energy,time,score,inventory,inventoryCount,objectives,emergencyTripsLeft,
+    roomEntities,entityCounts)) {
+        g_lastActionMessage = "[Game Saved] The Game state was successfully saved!";
+    }
+    else g_lastActionMessage = "[Error] Failed to save game state!";
+}
+else if(command == "LOAD" || command == "load") {
+    if(loadGameStateFromFile("out/savegame.txt",playerFloor,playerRoom,energy,time,score,inventory,inventoryCount,objectives,emergencyTripsLeft
+    ,roomEntities,entityCounts))
+        g_lastActionMessage = "[Game Loaded] The Game state has been succesfully loaded!";
+    else g_lastActionMessage = "[Error] Failed to load game state!";
+}
 else if(command == "DEPART" || command == "depart"){
     //station is at f 1 r 1
     if(playerFloor==1 && playerRoom == 1) {
