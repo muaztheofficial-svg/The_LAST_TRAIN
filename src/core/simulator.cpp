@@ -357,6 +357,7 @@ bool running=true;
 string command;
 while (running)
 {
+if(checkEndConditions(energy,time,objectives)) break;
 if (objectives[OBJ_LIFT_PASS] && emergencyTripsLeft<3 && !objectives[OBJ_LIFT2_ACTIVE])
 {
 emergencyTripsLeft=3;}
@@ -475,10 +476,12 @@ cout<<"  INSPECT               - Examine current room forclues and items"<<endl;
 cout<<"  COLLECT <symbol>      - Pick up an item from the floor into inventory"<<endl;
 cout<<"  USE <symbol>          - Use an item from your inventory"<<endl;
 cout<<"  UNLOCK <code>         - Enter 3-digit combination code (F5-R1)"<<endl;
-cout<<"  DEPART / BOARD        - Board the prepared train in F1-R1"<<endl;
+cout<<"  DEPART                - Board the prepared train in F1-R1"<<endl;
 cout<<"  CHECKLIST             - View all 16 mission objectives"<<endl;
 cout<<"  HELP                  - Display this help message"<<endl;
 cout<<"  QUIT                  - Exit simulation"<<endl;
+cout<<"  SAVE                  - Save current game state to out/savegame.txt"<<endl;
+cout<<"  LOAD                  - Load saved game state from out/savegame.txt"<<endl;
 cout<<"=================================================="<<endl;
 cout<<"Press Enter to return to dashboard...";
 cin.ignore();
@@ -494,8 +497,7 @@ else
 g_lastActionMessage="[Error] Unknown command: '"+command+"'. Type HELP for command list.";}
 //muaz's code
 //check if player died this turn
-if(energy<=0 || time<=0) {
-    objectives[OBJ_MISSION_FAILED] = true;
+if(checkEndConditions(energy,time,objectives)) {
     running=false;
     break;
 }
