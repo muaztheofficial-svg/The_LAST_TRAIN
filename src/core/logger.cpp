@@ -13,6 +13,7 @@ if (!file.is_open())
 {
 cout<<"Error: COuld not save game to "<<filename<<endl;
 return false;}
+file<<playerFloor<<" "<<playerRoom<<endl; //why does abdullah leave so many bugs :sigh:
 file<<energy<<" "<<time<<" "<<score<<" "<<emergencyTripsLeft<<endl;
 file<<inventoryCount;
 for (int i=0;i<inventoryCount;i++)

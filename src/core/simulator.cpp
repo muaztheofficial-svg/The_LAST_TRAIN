@@ -260,7 +260,7 @@ bool handleUseCommand(char itemSymbol, int currentFloor, int currentRoom,
                     if(itemSymbol == ENT_FUSE) {
                         if(currentFloor==3 && currentRoom==4) {
                         if(installFuseControlPanel(inventory,inventoryCount,objectives,score)) {
-                            applyResourceDelta(energy,time,COST_ITEM_USE_ENERGY,COST_ITEM_USE_ENERGY);
+                            applyResourceDelta(energy,time,COST_ITEM_USE_ENERGY,COST_ITEM_USE_TIME);
                             g_lastActionMessage = "[Puzzle Solved] Fuse installed into Control Panel! Lift 2 powered and ACTIVE (+20 Score)! (-1 Energy, -1 Time)";
                             return true;
                         }
@@ -277,7 +277,7 @@ bool handleUseCommand(char itemSymbol, int currentFloor, int currentRoom,
                                 return false;
                             }
                             removeItem(inventory,inventoryCount,ENT_MEDICAL_KIT);
-                            energy-=COST_ITEM_USE_ENERGY; time-=COST_ITEM_USE_TIME;
+                            applyResourceDelta(energy,time,COST_ITEM_USE_ENERGY,COST_ITEM_USE_TIME);
                             objectives[OBJ_PASSENGER_RESCUED] = true;
                             applyScoreDelta(score,SCORE_RESCUE_PASSENGER);
                             g_lastActionMessage= "[Rescue Success] Applied Medical Kit! Stranded passenger rescued (+25 Score)! (-1 Energy, -1 Time)";
@@ -294,7 +294,7 @@ bool handleUseCommand(char itemSymbol, int currentFloor, int currentRoom,
                                 g_lastActionMessage="[Use Notice] The cat is already secured.";
                                 return false;
                             }
-                            energy-=COST_ITEM_USE_ENERGY; time-=COST_ITEM_USE_TIME;
+                            applyResourceDelta(energy,time,COST_ITEM_USE_ENERGY,COST_ITEM_USE_TIME);
                             objectives[OBJ_CAT_SECURED]=true;
                             applyScoreDelta(score,SCORE_SECURE_CAT);
                             g_lastActionMessage="[Rescue Success] Cat caught using the Cat Carrier! Cat successfully secured (+25 Score)! (-1 Energy, -1 Time)";
@@ -428,7 +428,7 @@ cin.clear();
 string discard;
 getline(cin, discard);}}
 //muaz's code
-else if(command == "DEPART" || "depart"){
+else if(command == "DEPART" || command == "depart"){
     //station is at f 1 r 1
     if(playerFloor==1 && playerRoom == 1) {
         if(!objectives[OBJ_TRAIN_PREPARED]) 
